@@ -1,0 +1,1144 @@
+<title>研究所英文複習器</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Literata:opsz,wght@7..72,500;7..72,700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: answer-sheet app — sticky tab bar, one working column (max 760px), answer-card ovals for choices */
+:root {
+  --bg: #F6F7F9; --surface: #FFFFFF; --ink: #1C2333; --muted: #626B7C; --line: #E9D5DB;
+  --print: #B8285A; --print-soft: #F8E3EA; --ok: #2E7A57; --ok-soft: #E1F1E8; --warn: #A86512; --bad: #C2410C; --bad-soft: #FBE7DC;
+  --f-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-en: "Literata", Georgia, "Times New Roman", serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #14161B; --surface: #1C1F26; --ink: #E7E9EF; --muted: #9AA1AF; --line: #3B2D33;
+  --print: #F0789A; --print-soft: #3A2029; --ok: #6BC59A; --ok-soft: #1D3328; --warn: #E2A456; --bad: #F08A5D; --bad-soft: #3A2318; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #14161B; --surface: #1C1F26; --ink: #E7E9EF; --muted: #9AA1AF; --line: #3B2D33;
+  --print: #F0789A; --print-soft: #3A2029; --ok: #6BC59A; --ok-soft: #1D3328; --warn: #E2A456; --bad: #F08A5D; --bad-soft: #3A2318; color-scheme: dark }
+
+* { box-sizing: border-box }
+[hidden] { display: none !important }
+body { background: var(--bg); color: var(--ink); font: 15px/1.65 var(--f-body) }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface) }
+button, input, select, textarea { font: inherit; color: inherit }
+:focus-visible { outline: 2px solid var(--print); outline-offset: 2px }
+h1, h2, h3 { margin: 0; text-wrap: balance; line-height: 1.3 }
+h2 { font-size: 1.25rem }
+h3 { font-size: 1.02rem }
+p { margin: 0 }
+.en { font-family: var(--f-en) }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums }
+.muted { color: var(--muted) }
+.small { font-size: .85rem }
+
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line) }
+.top-inner, main { max-width: 760px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.top-inner { display: flex; align-items: center; gap: 12px; padding-block: 10px 0; flex-wrap: wrap }
+.brand { display: flex; align-items: baseline; gap: 8px; margin-right: auto }
+.brand b { font-size: 1.05rem; letter-spacing: .02em }
+.brand span { font-size: .78rem; color: var(--muted) }
+.sync { font-size: .75rem; color: var(--muted) }
+nav.tabs { display: flex; gap: 2px; overflow-x: auto; width: 100%; scrollbar-width: none }
+nav.tabs button { border: 0; background: none; padding: 8px 12px 10px; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap; cursor: pointer }
+nav.tabs button[aria-selected="true"] { color: var(--print); border-color: var(--print); font-weight: 700 }
+main { padding-block: 20px 64px; display: grid; gap: 20px }
+section.view { display: grid; gap: 16px; min-width: 0 }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: grid; gap: 12px; min-width: 0 }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px }
+.btn { border: 1px solid var(--print); background: var(--print); color: var(--surface); border-radius: 999px; padding: 8px 18px; cursor: pointer; font-weight: 500 }
+.btn.ghost { background: transparent; color: var(--print) }
+.btn.plain { border-color: var(--line); background: transparent; color: var(--ink) }
+.btn:disabled { opacity: .45; cursor: not-allowed }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: .88rem }
+.chip[aria-pressed="true"] { border-color: var(--print); background: var(--print-soft); color: var(--print); font-weight: 600 }
+.tag { display: inline-block; font-size: .72rem; padding: 1px 8px; border-radius: 999px; background: var(--print-soft); color: var(--print); letter-spacing: .03em }
+.tag.ok { background: var(--ok-soft); color: var(--ok) }
+.tag.bad { background: var(--bad-soft); color: var(--bad) }
+.eyebrow { font-size: .74rem; letter-spacing: .12em; color: var(--print); font-weight: 700 }
+input[type=text], input[type=date], select, textarea { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100% }
+textarea { resize: vertical; min-height: 120px; line-height: 1.6 }
+label.field { display: grid; gap: 4px; font-size: .85rem; color: var(--muted) }
+.note { font-size: .85rem; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px }
+.empty { text-align: center; padding: 28px 12px; color: var(--muted); display: grid; gap: 10px; justify-items: center }
+
+/* Today */
+.hero { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center }
+.count { font-family: var(--f-mono); font-size: 3.4rem; font-weight: 600; line-height: 1; color: var(--print) }
+.count small { font-size: .9rem; color: var(--muted); font-weight: 400; margin-left: 4px }
+.stat { display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); cursor: pointer; text-align: left }
+.stat b { font-family: var(--f-mono); font-size: 1.6rem; font-variant-numeric: tabular-nums }
+.stat span { font-size: .82rem; color: var(--muted) }
+.bars { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; align-items: end; height: 70px }
+.bars i { display: block; background: var(--print); border-radius: 3px 3px 0 0; min-height: 2px; opacity: .85 }
+.bars i.zero { background: var(--line); opacity: 1 }
+.bar-axis { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted) }
+
+/* Flashcard */
+.flash { min-height: 230px; display: grid; place-items: center; text-align: center; gap: 10px; cursor: pointer; border-style: dashed }
+.flash .word { font-family: var(--f-en); font-size: 2.1rem; font-weight: 700 }
+.flash .ex { font-family: var(--f-en); font-style: italic; color: var(--muted); max-width: 52ch }
+.grade { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px }
+.grade button { border-radius: var(--r); padding: 10px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; display: grid }
+.grade button small { color: var(--muted); font-size: .75rem }
+.grade .g0 { border-color: var(--bad); color: var(--bad) }
+.grade .g2 { border-color: var(--ok); color: var(--ok) }
+.seg { display: inline-flex; gap: 4px }
+.vstats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px }
+.vstats button { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 6px 8px; text-align: left; cursor: pointer; display: grid; min-width: 0 }
+.vstats button[aria-pressed="true"] { border-color: var(--print); background: var(--print-soft) }
+.vstats b { font-family: var(--f-mono); font-size: 1.1rem; font-variant-numeric: tabular-nums }
+.vstats span { font-size: .78rem; color: var(--muted) }
+.vrow { border-bottom: 1px solid var(--line) }
+.vrow:last-child { border-bottom: 0 }
+.vrow summary { list-style: none; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 10px 0; cursor: pointer; color: var(--ink) }
+.vrow summary::-webkit-details-marker { display: none }
+.vrow .vw { font-family: var(--f-en); font-weight: 700; font-size: 1.02rem }
+.vrow .vw small { font-weight: 400; color: var(--muted); margin-left: 6px; font-size: .8rem }
+.vrow .vz { grid-column: 1; font-size: .9rem; color: var(--muted); min-width: 0 }
+.vrow .vt { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end }
+.vrow .vx { padding: 0 0 12px; display: grid; gap: 4px; font-size: .88rem }
+.vrow .vx .en { font-style: italic }
+.progress { height: 4px; background: var(--line); border-radius: 4px; overflow: hidden }
+.progress i { display: block; height: 100%; background: var(--print) }
+
+/* Answer-card question */
+.q-stem { font-family: var(--f-en); font-size: 1.08rem; line-height: 1.7 }
+.passage { font-family: var(--f-en); line-height: 1.85; background: var(--bg); border-radius: 8px; padding: 14px; max-height: 340px; overflow-y: auto; white-space: pre-wrap }
+.opts { display: grid; gap: 8px }
+.opt { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; text-align: left; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer; font-family: var(--f-en) }
+.oval { width: 30px; height: 18px; border: 1.5px solid var(--print); border-radius: 50%; display: grid; place-items: center; font: 600 .7rem var(--f-mono); color: var(--print) }
+.opt.picked .oval { background: var(--print); color: var(--surface) }
+.opt.right { border-color: var(--ok); background: var(--ok-soft) }
+.opt.right .oval { border-color: var(--ok); background: var(--ok); color: var(--surface) }
+.opt.wrong { border-color: var(--bad); background: var(--bad-soft) }
+.explain { background: var(--bg); border-radius: 8px; padding: 12px; font-size: .92rem }
+.quiz-card { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 96px) }
+.quiz-tail { display: grid; gap: 12px; scroll-margin-bottom: 24px }
+.timer { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: .95rem }
+.timer.low { color: var(--bad) }
+
+/* Mistakes */
+.fix { display: grid; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--line) }
+.fix:last-child { border-bottom: 0 }
+.fix .w { text-decoration: line-through; text-decoration-color: var(--bad); color: var(--muted); font-family: var(--f-en) }
+.fix .r { color: var(--ok); font-family: var(--f-en); font-weight: 500 }
+
+/* Essay */
+.score-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px }
+.score { border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: grid; gap: 2px }
+.score b { font-family: var(--f-mono); font-size: 1.3rem }
+.score .meter { height: 4px; background: var(--line); border-radius: 4px; overflow: hidden }
+.score .meter i { display: block; height: 100%; background: var(--print) }
+.rewrite { font-family: var(--f-en); line-height: 1.85; white-space: pre-wrap }
+.essay-box { font-family: var(--f-en); min-height: 260px; font-size: 1rem }
+details summary { cursor: pointer; color: var(--print); font-size: .9rem }
+
+/* Bank */
+.pack { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--line); align-items: center }
+.pack:last-child { border-bottom: 0 }
+.drop { border: 1.5px dashed var(--line); border-radius: var(--r); padding: 18px; text-align: center; display: grid; gap: 8px; justify-items: center }
+.drop.over { border-color: var(--print); background: var(--print-soft) }
+.status { font-size: .88rem; color: var(--muted) }
+.status.err { color: var(--bad) }
+a { color: var(--print) }
+
+@media (max-width: 560px) { .vstats { grid-template-columns: repeat(3, minmax(0, 1fr)) } }
+@media (max-width: 480px) {
+  .hero { grid-template-columns: 1fr }
+  .count { font-size: 2.8rem }
+  .flash .word { font-size: 1.7rem }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .opt, .chip, .btn, .stat { transition: background-color .15s, border-color .15s }
+}
+</style>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand"><b>研究所英文複習器</b><span>台大商研 英文(A)・政大科智 英文 B</span></div>
+    <span class="sync" id="sync">連線中…</span>
+    <nav class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-view="today" aria-selected="true">今日</button>
+      <button role="tab" data-view="vocab">單字卡</button>
+      <button role="tab" data-view="practice">選擇題</button>
+      <button role="tab" data-view="mistakes">錯題本</button>
+      <button role="tab" data-view="essay">作文</button>
+      <button role="tab" data-view="bank">題庫</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- TODAY -->
+  <section class="view" id="v-today">
+    <div class="card hero">
+      <div class="count" id="dDays">--<small>天</small></div>
+      <div style="display:grid;gap:6px;min-width:0">
+        <span class="eyebrow">距離筆試</span>
+        <p id="dDate" class="muted small"></p>
+        <p class="small">台大英文(A)只要贏過四成考生；政大英文 B 是實際計分，選擇題佔七成。每天先清掉到期的卡片，再做一組選擇題。</p>
+        <label class="field" style="max-width:220px">考試日期<input type="date" id="examDate"></label>
+      </div>
+    </div>
+    <div class="grid2" id="todayStats" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))"></div>
+    <div class="card">
+      <div class="row"><h3>最近 14 天作答量</h3><span class="muted small" id="streak"></span></div>
+      <div class="bars" id="bars"></div>
+      <div class="bar-axis"><span id="barFrom"></span><span>今天</span></div>
+    </div>
+  </section>
+
+  <!-- VOCAB -->
+  <section class="view" id="v-vocab" hidden>
+    <div class="row"><h2>單字卡</h2><span class="muted small" id="vocabInfo"></span>
+      <span class="seg" role="group" aria-label="檢視方式" style="margin-left:auto"><button class="chip" id="modeFlash">翻卡</button><button class="chip" id="modeList">總覽</button></span></div>
+    <div id="vocabFlash" style="display:grid;gap:16px">
+      <div class="progress"><i id="vocabBar" style="width:0"></i></div>
+      <div id="vocabStage"></div>
+    </div>
+    <div id="vocabList" class="card" hidden>
+      <div class="vstats" id="vStats"></div>
+      <div class="row">
+        <input type="text" id="vSearch" placeholder="搜尋英文或中文" style="flex:1 1 200px;width:auto">
+        <select id="vSource" style="width:auto;max-width:100%"></select>
+        <select id="vSort" style="width:auto">
+          <option value="pack">題庫順序</option><option value="az">A → Z</option><option value="wrong">錯最多</option><option value="due">最快到期</option>
+        </select>
+      </div>
+      <div class="row" id="vFilters"></div>
+      <div class="row"><span class="small muted" id="vCount"></span><button class="btn ghost" id="vDrill" style="margin-left:auto">翻卡練習這些字</button></div>
+      <div id="vRows"></div>
+      <button class="btn plain" id="vMore" hidden>顯示更多</button>
+    </div>
+    <div class="card" data-ai>
+      <h3>AI 補一組新字</h3>
+      <p class="small muted">補一批台大、政大研究所英文程度的新字，會自動避開字庫裡已經有的字。</p>
+      <div class="row">
+        <select id="wordCount" style="width:auto">
+          <option value="30">30 個</option><option value="50" selected>50 個</option><option value="100">100 個</option>
+        </select>
+        <select id="wordTopic" style="width:auto">
+          <option value="綜合">綜合</option><option value="科技">科技</option><option value="經濟與商業">經濟與商業</option>
+          <option value="政治與國際">政治與國際</option><option value="科普與醫學">科普與醫學</option><option value="文化與社會">文化與社會</option>
+        </select>
+        <button class="btn ghost" id="wordBtn">補新字</button>
+      </div>
+      <p class="status" id="wordStatus"></p>
+    </div>
+  </section>
+
+  <!-- PRACTICE -->
+  <section class="view" id="v-practice" hidden>
+    <div class="card" id="practiceSetup">
+      <h2>選擇題練習</h2>
+      <div class="row" id="secChips"></div>
+      <div class="row">
+        <span class="small muted">題數</span>
+        <span class="row" id="numChips"></span>
+      </div>
+      <div class="row">
+        <label class="row small"><input type="checkbox" id="timed"> 計時（每題 60 秒，閱讀題 90 秒）</label>
+      </div>
+      <div class="row">
+        <button class="btn" id="startQuiz">開始作答</button>
+        <span class="muted small" id="poolInfo"></span>
+      </div>
+    </div>
+    <div class="card" data-ai>
+      <h3>AI 出新題</h3>
+      <p class="small muted">依台大、政大研究所英文的題型出 5 題全新題目，存進題庫。</p>
+      <div class="row">
+        <select id="genSec" style="width:auto">
+          <option value="vocab">單字題</option><option value="grammar">文法題</option>
+          <option value="cloze">克漏字（含短文）</option><option value="reading">閱讀測驗（含短文）</option>
+        </select>
+        <select id="genTopic" style="width:auto">
+          <option value="科技">科技</option><option value="經濟">經濟</option><option value="政治與國際">政治與國際</option>
+          <option value="文化">文化</option><option value="科普">科普</option><option value="管理與商業">管理與商業</option>
+        </select>
+        <button class="btn ghost" id="genBtn">出題</button>
+      </div>
+      <p class="status" id="genStatus"></p>
+    </div>
+    <div id="quizStage"></div>
+  </section>
+
+  <!-- MISTAKES -->
+  <section class="view" id="v-mistakes" hidden>
+    <div class="row"><h2>錯題本</h2><button class="btn ghost" id="drillFix">複習作文錯誤</button><button class="btn ghost" id="drillWrong">重做答錯的選擇題</button></div>
+    <div id="fixStage"></div>
+    <div class="card"><h3>作文裡的錯誤</h3><div id="fixList"></div></div>
+    <div class="card"><h3>答錯的選擇題</h3><div id="wrongList"></div></div>
+  </section>
+
+  <!-- ESSAY -->
+  <section class="view" id="v-essay" hidden>
+    <div class="card">
+      <div class="row"><h2>作文</h2><span class="muted small">約 250–300 字・構思 5–8 分鐘・寫作 30 分鐘</span></div>
+      <label class="field">題目<select id="promptSel"></select></label>
+      <div class="row" data-ai><button class="btn plain" id="newPrompt">AI 給我新題目</button><span class="status" id="promptStatus"></span></div>
+      <p class="en" id="promptText" style="line-height:1.7"></p>
+    </div>
+    <div class="card">
+      <div class="row"><span class="timer" id="essayTimer">30:00</span><button class="btn plain" id="essayClock">開始計時</button><span class="muted small" id="wc">0 字</span></div>
+      <textarea id="essayBox" class="essay-box" placeholder="Start writing here. 不查字典、不用翻譯工具。"></textarea>
+      <div class="row" data-ai><button class="btn" id="gradeBtn">送出批改</button><span class="status" id="gradeStatus"></span></div>
+      <div class="row" data-standalone hidden><button class="btn" id="copyEssay">複製作文</button><span class="small muted" id="copyStatus">獨立版沒有 AI 批改。複製後貼到 Claude 版的作文頁送出批改。</span></div>
+    </div>
+    <div id="gradeOut"></div>
+    <div class="card"><h3>批改紀錄</h3><div id="essayHist"></div></div>
+  </section>
+
+  <!-- BANK -->
+  <section class="view" id="v-bank" hidden>
+    <div class="card" data-standalone hidden>
+      <h2>獨立版</h2>
+      <p class="small muted">這個版本不需要登入 Claude，單字卡、選擇題、錯題本都能用，進度存在這台裝置的瀏覽器裡。AI 批改作文、AI 出題、匯入考古題請用 Claude 版。題庫由 Claude 版同步過來，更新後重新整理就會出現新題。</p>
+      <h3>進度備份</h3>
+      <p class="small muted">換手機或電腦時，先在舊裝置匯出，再到新裝置匯入。</p>
+      <div class="row">
+        <button class="btn ghost" id="exportProgress">匯出進度</button>
+        <label class="btn plain" style="cursor:pointer">匯入進度<input type="file" id="importProgress" accept=".json,application/json" hidden></label>
+        <span class="status" id="progressStatus"></span>
+      </div>
+    </div>
+    <div class="card" data-ai>
+      <h2>匯入考古題</h2>
+      <p class="small muted">上傳 PDF、照片或貼上文字，AI 會拆成單字、文法、克漏字、閱讀題。掃描版 PDF（例如台大考古題）會逐頁辨識。考古題通常沒附答案，AI 推定的答案會標註出來。</p>
+      <label class="field">來源標籤<input type="text" id="srcLabel" placeholder="例如：台大 114 英文(A)"></label>
+      <div class="drop" id="drop">
+        <span>把檔案拖到這裡，或</span>
+        <label class="btn plain" style="cursor:pointer">選擇檔案<input type="file" id="fileIn" accept=".pdf,image/*,.txt" hidden></label>
+        <span class="small muted" id="fileName">支援 PDF、JPG、PNG、TXT</span>
+      </div>
+      <label class="field">或直接貼上試題文字<textarea id="pasteIn" placeholder="把考古題文字貼在這裡"></textarea></label>
+      <div class="row"><button class="btn" id="importBtn">解析並存入題庫</button><span class="status" id="importStatus"></span></div>
+    </div>
+    <div class="card" data-ai>
+      <h2>用新聞出題</h2>
+      <p class="small muted">貼上一篇你讀到的英文報導（CNN、BBC、TIME 等），AI 會改寫成考試長度的短文，出成克漏字或閱讀測驗。</p>
+      <label class="field">文章網址（選填，存為出處）<input type="text" id="newsUrl" placeholder="https://"></label>
+      <label class="field">文章內容<textarea id="newsText" placeholder="貼上報導全文或主要段落"></textarea></label>
+      <div class="row">
+        <select id="newsKind" style="width:auto"><option value="cloze">克漏字</option><option value="reading">閱讀測驗</option><option value="both">兩種都要</option></select>
+        <button class="btn" id="newsBtn">出題</button><span class="status" id="newsStatus"></span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>題庫內容</h2>
+      <div id="packList"></div>
+    </div>
+    <div class="card">
+      <h3>考古題去哪裡找</h3>
+      <ul class="small" style="margin:0;padding-left:1.2em;display:grid;gap:4px">
+        <li><a href="https://exam.lib.ntu.edu.tw/graduate" target="_blank" rel="noopener">台大圖書館 碩士班考古題</a>：用科目名稱搜尋「英文(A)」，多為掃描檔，下載後在上面匯入。</li>
+        <li><a href="https://ah.lib.nccu.edu.tw/" target="_blank" rel="noopener">政大學術集成 考古題典藏</a>：搜尋「科技管理」或「英文」。</li>
+        <li><a href="https://exam.aca.ntu.edu.tw/" target="_blank" rel="noopener">台大招生資訊</a>：確認當年簡章的考試日期與科目。</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (k.startsWith("aria-")) n.setAttribute(k, String(v));
+    else if (v !== false && v != null) n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const k of kids.flat()) if (k != null && k !== false) n.append(k.nodeType ? k : String(k));
+  return n;
+};
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v) } catch { return d } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)) } catch {} }
+};
+const DAY = 864e5;
+const today = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() };
+const dkey = t => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` };
+const INTERVALS = [0, 1, 2, 4, 7, 15, 30];
+const SEC = { vocab: "單字", grammar: "文法", cloze: "克漏字", reading: "閱讀" };
+const LETTERS = "ABCD";
+
+const S = {
+  db: null, uid: null, sample: null, caps: null,
+  packs: [], items: new Map(), passages: new Map(),
+  srs: { cards: {}, log: {} }, essays: [],
+  view: "today"
+};
+
+/* ---------- data shaping ---------- */
+function rebuild() {
+  S.items.clear(); S.passages.clear();
+  for (const p of S.packs) {
+    (p.items || []).forEach((it, i) => {
+      const id = `${p.id}~${i}`;
+      const item = { ...it, id, pack: p.id, packTitle: p.title, source: it.source || p.source || "", sourceUrl: it.sourceUrl || p.sourceUrl || "" };
+      if (it.type === "passage") S.passages.set(`${p.id}~${it.key}`, item);
+      else S.items.set(id, item);
+    });
+  }
+  for (const e of S.essays) {
+    (e.result?.errors || []).forEach((er, i) => {
+      if (!er.original || !er.corrected) return;
+      const id = `${e.id}~e${i}`;
+      S.items.set(id, { id, type: "fix", wrong: er.original, right: er.corrected, why: er.why || "", cat: er.category || "", from: e.createdAt });
+    });
+  }
+  renderAll();
+}
+const itemsOf = type => [...S.items.values()].filter(i => i.type === type);
+const passageOf = it => it.passage ? S.passages.get(`${it.pack}~${it.passage}`) : null;
+const card = id => S.srs.cards[id];
+const isDue = id => { const c = card(id); return c && c.due <= today() };
+const isNew = id => !card(id);
+
+let saveTimer = null;
+function grade(id, ok) {
+  const c = S.srs.cards[id] || { b: 0, n: 0, w: 0 };
+  c.b = ok ? Math.min(c.b + 1, INTERVALS.length - 1) : 0;
+  if (!ok) c.w++;
+  c.n++;
+  c.due = today() + INTERVALS[c.b] * DAY;
+  S.srs.cards[id] = c;
+  const k = dkey(today());
+  S.srs.log[k] = (S.srs.log[k] || 0) + 1;
+  store.set("srs", S.srs);
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveSrs, 1500);
+}
+let saving = false, pending = false;
+async function saveSrs() {
+  if (!S.db || !S.uid) return;
+  if (saving) { pending = true; return }
+  saving = true;
+  try { await S.db.doc(`data/users/${S.uid}/srs`).set(S.srs); setSync("已同步") }
+  catch (e) { setSync("同步失敗，進度先存在這台裝置") }
+  saving = false;
+  if (pending) { pending = false; saveSrs() }
+}
+const setSync = t => { $("#sync").textContent = t };
+
+/* ---------- tabs ---------- */
+function show(view) {
+  S.view = view;
+  document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.view === view));
+  document.querySelectorAll("section.view").forEach(s => s.hidden = s.id !== `v-${view}`);
+  store.set("view", view);
+  if (view === "vocab" && !vocabSession) startVocab();
+  window.scrollTo(0, 0);
+}
+$("#tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) show(b.dataset.view) });
+
+/* ---------- today ---------- */
+const examInput = $("#examDate");
+examInput.value = store.get("examDate", "2027-02-01");
+examInput.addEventListener("change", () => { store.set("examDate", examInput.value); renderToday() });
+function renderToday() {
+  const ex = new Date(examInput.value + "T00:00:00").getTime();
+  const days = Math.max(0, Math.round((ex - today()) / DAY));
+  $("#dDays").firstChild.textContent = isFinite(days) ? days : "--";
+  $("#dDate").textContent = isFinite(ex) ? `考試日 ${examInput.value}（預設為 2027/2/1，請依簡章調整）` : "";
+  const vocab = itemsOf("vocab"), mc = itemsOf("mc"), fix = itemsOf("fix");
+  const stats = [
+    ["vocab", vocab.filter(i => isDue(i.id)).length, `到期單字・另有 ${vocab.filter(i => isNew(i.id)).length} 個新字`],
+    ["practice", mc.filter(i => isNew(i.id)).length, `題沒做過的選擇題・共 ${mc.length} 題`],
+    ["mistakes", fix.filter(i => isNew(i.id) || isDue(i.id)).length + mc.filter(i => card(i.id)?.w && isDue(i.id)).length, "題錯題待複習"],
+    ["essay", S.essays.length, "篇已批改作文"]
+  ];
+  $("#todayStats").replaceChildren(...stats.map(([v, n, t]) => el("button", { class: "stat", onclick: () => show(v) }, el("b", {}, n), el("span", {}, t))));
+  const t0 = today(), vals = [];
+  for (let i = 13; i >= 0; i--) vals.push(S.srs.log[dkey(t0 - i * DAY)] || 0);
+  const max = Math.max(10, ...vals);
+  $("#bars").replaceChildren(...vals.map(v => el("i", { class: v ? "" : "zero", style: `height:${v ? Math.max(6, v / max * 100) : 3}%`, title: `${v} 題` })));
+  $("#barFrom").textContent = dkey(t0 - 13 * DAY).slice(5);
+  let streak = 0; for (let i = 0; S.srs.log[dkey(t0 - i * DAY)]; i++) streak++;
+  $("#streak").textContent = streak ? `連續 ${streak} 天` : "";
+}
+
+/* ---------- vocab ---------- */
+let vocabSession = null;
+function startVocab() {
+  const vocab = itemsOf("vocab");
+  const due = vocab.filter(i => isDue(i.id)).sort((a, b) => card(a.id).due - card(b.id).due);
+  const fresh = vocab.filter(i => isNew(i.id)).slice(0, 15);
+  vocabSession = { queue: [...due, ...fresh].map(i => i.id), done: 0, total: due.length + fresh.length, flipped: false };
+  renderVocab();
+}
+function renderVocab() {
+  const st = $("#vocabStage");
+  const vs = vocabSession;
+  if (!itemsOf("vocab").length) { st.replaceChildren(emptyBank("題庫裡還沒有單字。")); $("#vocabInfo").textContent = ""; return }
+  if (!vs || !vs.queue.length) {
+    $("#vocabBar").style.width = "100%";
+    $("#vocabInfo").textContent = "";
+    st.replaceChildren(el("div", { class: "card empty" }, el("h3", {}, "今天的單字複習完成"), el("p", {}, `下一批會在明天到期。`), el("button", { class: "btn ghost", onclick: () => { vocabSession = null; startVocab() } }, "再抽一批新字")));
+    return;
+  }
+  const it = S.items.get(vs.queue[0]);
+  if (!it) { vs.queue.shift(); return renderVocab() }
+  $("#vocabInfo").textContent = `剩 ${vs.queue.length} 張・${isNew(it.id) ? "新字" : "複習"}`;
+  $("#vocabBar").style.width = `${vs.total ? vs.done / vs.total * 100 : 0}%`;
+  const front = el("div", { class: "card flash", tabindex: 0, role: "button", "aria-label": "翻面" },
+    el("div", { class: "word" }, it.word),
+    it.pos ? el("span", { class: "muted small en" }, it.pos) : null,
+    vs.flipped ? el("div", {}, el("p", { style: "font-size:1.15rem;font-weight:500" }, it.zh || ""),
+      it.example ? el("p", { class: "ex" }, it.example) : null,
+      it.note ? el("p", { class: "small muted" }, it.note) : null) : el("span", { class: "muted small" }, "點一下看中文與例句"));
+  const flip = () => { vs.flipped = true; renderVocab() };
+  front.addEventListener("click", flip);
+  front.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip() } });
+  const answer = ok => () => {
+    grade(it.id, ok === 2);
+    vs.queue.shift();
+    if (ok === 0) vs.queue.splice(Math.min(4, vs.queue.length), 0, it.id);
+    else vs.done++;
+    vs.flipped = false; renderVocab(); renderToday();
+  };
+  st.replaceChildren(front, vs.flipped ? el("div", { class: "grade" },
+    el("button", { class: "g0", onclick: answer(0) }, "不會", el("small", {}, "等一下再出現")),
+    el("button", { class: "g1", onclick: answer(1) }, "有點印象", el("small", {}, "明天再複習")),
+    el("button", { class: "g2", onclick: answer(2) }, "會", el("small", {}, "拉長間隔"))) : "");
+}
+
+/* vocab overview */
+const V = { mode: store.get("vMode", "flash"), status: store.get("vStatus", "all"), q: "", source: "", sort: store.get("vSort", "pack"), limit: 120 };
+const STATUS = [
+  ["all", "全部", () => true],
+  ["new", "新字", c => !c],
+  ["learning", "學習中", c => c && c.b < 4],
+  ["known", "熟悉", c => c && c.b >= 4],
+  ["due", "今天到期", c => c && c.due <= today()],
+  ["hard", "常錯", c => c && c.w >= 2]
+];
+function setVocabMode(m) {
+  V.mode = m; store.set("vMode", m);
+  $("#modeFlash").setAttribute("aria-pressed", m === "flash");
+  $("#modeList").setAttribute("aria-pressed", m === "list");
+  $("#vocabFlash").hidden = m !== "flash";
+  $("#vocabList").hidden = m !== "list";
+  if (m === "list") { $("#vocabInfo").textContent = ""; renderVocabList() } else renderVocab();
+}
+$("#modeFlash").addEventListener("click", () => setVocabMode("flash"));
+$("#modeList").addEventListener("click", () => setVocabMode("list"));
+$("#vSearch").addEventListener("input", e => { V.q = e.target.value.trim().toLowerCase(); V.limit = 120; renderVocabList() });
+$("#vSource").addEventListener("change", e => { V.source = e.target.value; V.limit = 120; renderVocabList() });
+$("#vSort").value = V.sort;
+$("#vSort").addEventListener("change", e => { V.sort = e.target.value; store.set("vSort", V.sort); renderVocabList() });
+$("#vMore").addEventListener("click", () => { V.limit += 200; renderVocabList() });
+function filteredVocab() {
+  const test = STATUS.find(s => s[0] === V.status)[2];
+  let list = itemsOf("vocab").filter(i => test(card(i.id)) && (!V.source || i.pack === V.source)
+    && (!V.q || i.word.toLowerCase().includes(V.q) || (i.zh || "").includes(V.q)));
+  const c = i => card(i.id);
+  if (V.sort === "az") list.sort((a, b) => a.word.localeCompare(b.word, "en", { sensitivity: "base" }));
+  else if (V.sort === "wrong") list.sort((a, b) => (c(b)?.w || 0) - (c(a)?.w || 0));
+  else if (V.sort === "due") list.sort((a, b) => (c(a)?.due ?? Infinity) - (c(b)?.due ?? Infinity));
+  return list;
+}
+function renderVocabList() {
+  if (V.mode !== "list") return;
+  const all = itemsOf("vocab");
+  $("#vStats").replaceChildren(...STATUS.map(([k, t, test]) => el("button", { "aria-pressed": V.status === k, onclick: () => { V.status = k; store.set("vStatus", k); V.limit = 120; renderVocabList() } },
+    el("b", {}, all.filter(i => test(card(i.id))).length), el("span", {}, t))));
+  const packs = [...new Map(all.map(i => [i.pack, i.packTitle])).entries()];
+  const src = $("#vSource");
+  src.replaceChildren(el("option", { value: "" }, "所有來源"), ...packs.map(([id, t]) => el("option", { value: id }, t)));
+  src.value = packs.some(p => p[0] === V.source) ? V.source : (V.source = "");
+  const list = filteredVocab();
+  $("#vCount").textContent = `${list.length} 個字`;
+  $("#vDrill").disabled = !list.length;
+  const today0 = today();
+  $("#vRows").replaceChildren(...(list.length ? list.slice(0, V.limit).map(i => {
+    const c = card(i.id);
+    const tags = [
+      !c ? el("span", { class: "tag" }, "新字") : c.b >= 4 ? el("span", { class: "tag ok" }, "熟悉") : el("span", { class: "tag" }, `學習中 ${c.b}/6`),
+      c?.w ? el("span", { class: "tag bad" }, `錯 ${c.w}`) : null,
+      c && c.due <= today0 ? el("span", { class: "tag ok" }, "今天") : null
+    ];
+    return el("details", { class: "vrow" },
+      el("summary", {}, el("span", { class: "vw" }, i.word, i.pos ? el("small", {}, i.pos) : null), el("span", { class: "vt" }, tags), el("span", { class: "vz" }, i.zh || "")),
+      el("div", { class: "vx" },
+        i.example ? el("p", { class: "en" }, i.example) : el("p", { class: "muted" }, "沒有例句（考卷上的干擾選項）"),
+        el("p", { class: "small muted" }, [i.packTitle, c ? `複習 ${c.n} 次・下次 ${dkey(c.due).slice(5)}` : "還沒練過"].filter(Boolean).join("・"))));
+  }) : [el("p", { class: "muted small", style: "padding:12px 0" }, "沒有符合的字。")]));
+  $("#vMore").hidden = list.length <= V.limit;
+}
+$("#vDrill").addEventListener("click", () => {
+  const ids = filteredVocab().slice(0, 60).map(i => i.id);
+  vocabSession = { queue: ids, done: 0, total: ids.length, flipped: false };
+  setVocabMode("flash");
+});
+
+const normWord = w => String(w || "").trim().toLowerCase();
+const knownWords = () => new Set(itemsOf("vocab").map(i => normWord(i.word)));
+// drop words already in the bank and duplicates within the batch
+function freshVocab(list) {
+  const seen = knownWords(), out = [];
+  for (const v of list || []) {
+    const k = normWord(v?.word);
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    out.push({ type: "vocab", word: String(v.word).trim(), pos: v.pos || "", zh: v.zh || "", example: v.example || "" });
+  }
+  return out;
+}
+$("#wordBtn").addEventListener("click", async () => {
+  const st = $("#wordStatus"), topic = $("#wordTopic").value, want = +$("#wordCount").value;
+  if (!S.sample || !S.db) { st.className = "status err"; st.textContent = "需要在 claude.ai 登入後開啟才能補字。"; return }
+  st.className = "status"; st.textContent = "挑字中，約 30–90 秒…"; $("#wordBtn").disabled = true;
+  try {
+    const words = [];
+    // batches of 50 keep each reply short enough not to be cut off
+    for (let round = 0; words.length < want && round < Math.ceil(want / 50) + 1; round++) {
+      const ask = Math.min(50, want - words.length) + 8;
+      if (round) st.textContent = `挑字中（已 ${words.length}/${want}）…`;
+      const have = [...knownWords(), ...words.map(w => normWord(w.word))];
+      const r = await S.sample.json(`Pick ${ask} English words for a Taiwanese student preparing for graduate-school entrance English exams (台大 英文(A), 政大 英文B; roughly TOEFL 90–100 / GRE-lite academic vocabulary). Topic focus: ${topic === "綜合" ? "mixed academic, business and current-affairs vocabulary" : topic}.
+Choose words that actually appear in such exams' vocabulary, cloze and reading sections. No basic words, no rare jargon.
+Do NOT include any of these words the student already has: ${have.join(", ")}
+For each: part of speech (n./v./adj./adv.), a concise Traditional Chinese meaning (繁體中文), and one natural example sentence in a news or academic register.
+Reply with only a JSON array: [{"word":"…","pos":"…","zh":"…","example":"…"}]`, { modelTier: "default", cache: false });
+      const batch = freshVocab(Array.isArray(r) ? r : r?.vocab).filter(w => !have.includes(normWord(w.word)));
+      if (!batch.length) break;
+      words.push(...batch.slice(0, want - words.length));
+    }
+    if (!words.length) throw { message: "AI 給的字都已經在字庫裡了，換個主題再試。" };
+    await savePack({ title: `AI 補字・${topic}・${dkey(Date.now())}`, source: "AI 補字", kind: "ai", items: words });
+    st.textContent = `已加入 ${words.length} 個新字：${words.slice(0, 5).map(w => w.word).join("、")}…`;
+    vocabSession = null;
+  } catch (e) { st.className = "status err"; st.textContent = aiErr(e) }
+  $("#wordBtn").disabled = false;
+});
+
+/* ---------- practice ---------- */
+let pSec = store.get("pSec", "all"), pNum = store.get("pNum", 10);
+function renderSetup() {
+  const secs = [["all", "全部"], ...Object.entries(SEC)];
+  $("#secChips").replaceChildren(...secs.map(([k, t]) => el("button", { class: "chip", "aria-pressed": pSec === k, onclick: () => { pSec = k; store.set("pSec", k); renderSetup() } }, t)));
+  $("#numChips").replaceChildren(...[5, 10, 20].map(n => el("button", { class: "chip", "aria-pressed": pNum === n, onclick: () => { pNum = n; store.set("pNum", n); renderSetup() } }, n)));
+  const pool = poolFor(pSec);
+  $("#poolInfo").textContent = `題庫有 ${pool.length} 題，${pool.filter(i => isNew(i.id)).length} 題沒做過`;
+}
+const poolFor = sec => itemsOf("mc").filter(i => sec === "all" || i.section === sec);
+function pickQuestions(pool, n) {
+  const score = i => { const c = card(i.id); if (!c) return 1; if (c.w && c.due <= today()) return 0; return 2 + (c.n || 0) };
+  const shuffled = pool.map(i => [score(i) + Math.random() * .9, i]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+  const picked = shuffled.slice(0, n);
+  // keep questions that share a passage together, in original order
+  return picked.sort((a, b) => (a.pack + (a.passage || "")).localeCompare(b.pack + (b.passage || "")) || a.id.localeCompare(b.id, undefined, { numeric: true }));
+}
+let quiz = null, qTimer = null;
+$("#startQuiz").addEventListener("click", () => {
+  const qs = pickQuestions(poolFor(pSec), pNum);
+  if (!qs.length) { $("#quizStage").replaceChildren(emptyBank("這個題型還沒有題目。")); return }
+  startQuiz(qs);
+});
+function startQuiz(qs) {
+  quiz = { qs, i: 0, picked: null, right: 0, results: [], timed: $("#timed").checked };
+  $("#practiceSetup").hidden = true;
+  renderQuiz();
+}
+function renderQuiz() {
+  clearInterval(qTimer);
+  const st = $("#quizStage");
+  if (!quiz) { st.replaceChildren(); $("#practiceSetup").hidden = false; return }
+  if (quiz.i >= quiz.qs.length) return renderQuizEnd();
+  const q = quiz.qs[quiz.i], p = passageOf(q);
+  quiz.picked = null;
+  const opts = (q.options || []).map((o, k) => el("button", { class: "opt", onclick: () => pick(k) }, el("span", { class: "oval" }, LETTERS[k]), el("span", {}, o)));
+  const timer = el("span", { class: "timer" });
+  const head = el("div", { class: "row" }, el("span", { class: "tag" }, SEC[q.section] || "題目"), el("span", { class: "muted small" }, `${quiz.i + 1} / ${quiz.qs.length}`), q.source ? el("span", { class: "muted small" }, q.source) : null, quiz.timed ? timer : null, el("button", { class: "btn plain", style: "margin-left:auto;padding:4px 12px", onclick: () => { quiz.i = quiz.qs.length; renderQuiz() } }, "結束"));
+  const box = el("div", { class: "card quiz-card" }, head,
+    p ? el("div", {}, p.title ? el("h3", { class: "en", style: "margin-bottom:6px" }, p.title) : null, el("div", { class: "passage" }, p.text), p.sourceUrl || q.sourceUrl ? el("p", { class: "small muted", style: "margin-top:6px" }, "改寫自 ", el("a", { href: p.sourceUrl || q.sourceUrl, target: "_blank", rel: "noopener" }, p.source || "原文")) : null) : null,
+    el("p", { class: "q-stem" }, q.stem || ""), el("div", { class: "opts" }, opts));
+  quiz.view = { box, opts, timer };
+  st.replaceChildren(box);
+  if (quiz.i > 0) box.scrollIntoView({ block: "start" });
+  if (quiz.timed) {
+    let left = q.section === "reading" ? 90 : 60;
+    const tick = () => { timer.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`; timer.classList.toggle("low", left <= 10); if (left-- <= 0) { clearInterval(qTimer); pick(-1) } };
+    tick(); qTimer = setInterval(tick, 1000);
+  }
+}
+// Answering updates the card in place and brings the explanation and the next button into view;
+// on reading questions they land below a long passage, out of sight.
+function pick(k) {
+  if (quiz.picked != null) return;
+  clearInterval(qTimer);
+  const q = quiz.qs[quiz.i], v = quiz.view;
+  quiz.picked = k;
+  const ok = k === q.answer;
+  if (ok) quiz.right++;
+  quiz.results.push({ id: q.id, ok });
+  v.opts.forEach((b, j) => { b.disabled = true; if (j === q.answer) b.classList.add("right"); else if (j === k) b.classList.add("wrong") });
+  v.timer.remove();
+  const next = el("button", { class: "btn", onclick: () => { quiz.i++; renderQuiz() } }, quiz.i + 1 < quiz.qs.length ? "下一題" : "看結果");
+  const tail = el("div", { class: "quiz-tail" },
+    el("div", { class: "explain" }, el("b", {}, k === -1 ? `時間到，正確答案是 ${LETTERS[q.answer]}。` : ok ? "答對了。" : `正確答案是 ${LETTERS[q.answer]}。`), " ", q.explain || "", q.aiAnswer ? el("p", { class: "small muted", style: "margin-top:4px" }, "此題答案由 AI 推定，原試卷未附解答。") : null),
+    el("div", { class: "row" }, next, el("span", { class: "small muted" }, "或按 Enter")));
+  v.box.append(tail);
+  next.focus({ preventScroll: true });
+  tail.scrollIntoView({ block: "end", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  try { grade(q.id, ok); renderToday() } catch (e) { setSync("進度儲存失敗，請重新整理") }
+}
+function renderQuizEnd() {
+  const n = quiz.results.length, r = quiz.right;
+  const wrong = quiz.results.filter(x => !x.ok).map(x => S.items.get(x.id)).filter(Boolean);
+  $("#quizStage").replaceChildren(el("div", { class: "card" },
+    el("span", { class: "eyebrow" }, "作答結果"),
+    el("div", { class: "row" }, el("span", { class: "count", style: "font-size:2.6rem" }, `${r}/${n}`), el("span", { class: "muted" }, n ? `正確率 ${Math.round(r / n * 100)}%` : "")),
+    wrong.length ? el("p", { class: "small muted" }, `答錯的 ${wrong.length} 題已放進錯題本，之後會優先出現。`) : null,
+    el("div", { class: "row" }, el("button", { class: "btn", onclick: () => { quiz = null; renderQuiz(); renderSetup() } }, "回到設定"), wrong.length ? el("button", { class: "btn ghost", onclick: () => startQuiz(wrong) }, "立刻重做錯題") : null)));
+}
+
+/* AI question generation */
+$("#genBtn").addEventListener("click", async () => {
+  const sec = $("#genSec").value, topic = $("#genTopic").value, status = $("#genStatus");
+  if (!S.sample) { status.textContent = "這個檢視無法使用 AI 功能，請在 claude.ai 登入後開啟。"; status.className = "status err"; return }
+  status.className = "status"; status.textContent = "出題中，約 20–40 秒…"; $("#genBtn").disabled = true;
+  try {
+    const withPassage = sec === "cloze" || sec === "reading";
+    const prompt = `You write practice questions for Taiwanese graduate-school entrance English exams (NTU 英文(A), NCCU 英文B). Level: TOEFL 90–100 / GRE-lite academic vocabulary, the style of 台大/政大研究所英文.
+Task: create 5 NEW original ${SEC[sec]} questions. Topic area: ${topic}.
+${withPassage ? `First write ONE original passage (${sec === "cloze" ? "180–230 words with five numbered blanks written as __(1)__ … __(5)__" : "280–350 words, academic magazine register"}) about a recent, real-world ${topic} theme. Then the 5 questions refer to it.` : sec === "vocab" ? "Each stem is one sentence with a blank (____); options are four single words of the same part of speech; test words that appear on graduate exams (e.g. mitigate, ubiquitous, scrutinize)." : "Each stem is one sentence testing a grammar point common on these exams (participles, inversion, subjunctive, relative clauses, parallelism, prepositions + V-ing, subject-verb agreement)."}
+Explanations in Traditional Chinese (繁體中文), 1–3 sentences, say why the answer is right and why a tempting distractor is wrong.
+Reply with only JSON in this exact shape:
+{"passage": ${withPassage ? '{"title":"…","text":"…"}' : "null"}, "questions":[{"stem":"…","options":["…","…","…","…"],"answer":0,"explain":"…"}]}
+"answer" is the 0-based index of the correct option. Vary the position of the correct answer.`;
+    const out = await S.sample.json(prompt, { modelTier: "default", cache: false });
+    const items = [];
+    if (out?.passage?.text) items.push({ type: "passage", key: "P1", title: out.passage.title || "", text: out.passage.text });
+    for (const q of out?.questions || []) if (validQ(q)) items.push({ type: "mc", section: sec, stem: q.stem, options: q.options.slice(0, 4), answer: q.answer, explain: q.explain || "", passage: items[0]?.type === "passage" ? "P1" : undefined });
+    if (!items.some(i => i.type === "mc")) throw { message: "AI 回傳的題目格式不完整，請再試一次。" };
+    await savePack({ title: `AI 出題・${SEC[sec]}・${topic}`, source: "AI 生成", kind: "ai", items });
+    status.textContent = `已加入 ${items.filter(i => i.type === "mc").length} 題，選「${SEC[sec]}」就會抽到。`;
+    renderSetup();
+  } catch (e) { status.className = "status err"; status.textContent = aiErr(e) }
+  $("#genBtn").disabled = false;
+});
+const validQ = q => q && typeof q.stem === "string" && Array.isArray(q.options) && q.options.length >= 4 && Number.isInteger(q.answer) && q.answer >= 0 && q.answer < 4;
+const aiErr = e => e?.code === "not_granted" ? "你沒有允許這個頁面使用 Claude，可在頁面的權限選單開啟。" : e?.code === "rate_limited" ? "使用次數暫時到上限，過幾分鐘再試。" : e?.code === "invalid_json" ? "AI 回覆格式有誤，請再按一次。" : (e?.message || "發生錯誤，請再試一次。");
+
+/* ---------- mistakes ---------- */
+function renderMistakes() {
+  const fixes = itemsOf("fix").sort((a, b) => (b.from || 0) - (a.from || 0));
+  $("#fixList").replaceChildren(...(fixes.length ? fixes.slice(0, 60).map(f => el("div", { class: "fix" },
+    el("div", { class: "row" }, f.cat ? el("span", { class: "tag bad" }, f.cat) : null, card(f.id) ? el("span", { class: "tag ok" }, `複習 ${card(f.id).n} 次`) : null),
+    el("span", { class: "w" }, f.wrong), el("span", { class: "r" }, f.right), f.why ? el("span", { class: "small muted" }, f.why) : null))
+    : [el("div", { class: "empty" }, el("p", {}, "作文批改後，每一個錯誤都會自動收進這裡。"), el("button", { class: "btn ghost", onclick: () => show("essay") }, "去寫一篇"))]));
+  const wrong = itemsOf("mc").filter(i => card(i.id)?.w).sort((a, b) => card(b.id).w - card(a.id).w);
+  $("#wrongList").replaceChildren(...(wrong.length ? wrong.slice(0, 60).map(q => el("div", { class: "fix" },
+    el("div", { class: "row" }, el("span", { class: "tag" }, SEC[q.section] || ""), el("span", { class: "tag bad" }, `錯 ${card(q.id).w} 次`), isDue(q.id) ? el("span", { class: "tag ok" }, "今天複習") : null),
+    el("span", { class: "en" }, q.stem), el("span", { class: "r" }, `${LETTERS[q.answer]}. ${q.options[q.answer]}`)))
+    : [el("div", { class: "empty" }, el("p", {}, "選擇題答錯的題目會出現在這裡。"))]));
+}
+$("#drillWrong").addEventListener("click", () => {
+  const wrong = itemsOf("mc").filter(i => card(i.id)?.w).sort((a, b) => card(a.id).due - card(b.id).due).slice(0, 20);
+  if (!wrong.length) return;
+  show("practice"); startQuiz(wrong);
+});
+let fixSession = null;
+$("#drillFix").addEventListener("click", () => {
+  const fixes = itemsOf("fix").filter(i => isNew(i.id) || isDue(i.id));
+  fixSession = { queue: (fixes.length ? fixes : itemsOf("fix")).slice(0, 15).map(i => i.id), shown: false };
+  renderFix();
+});
+function renderFix() {
+  const st = $("#fixStage");
+  if (!fixSession) return st.replaceChildren();
+  if (!fixSession.queue.length) { fixSession = null; st.replaceChildren(el("div", { class: "card empty" }, el("h3", {}, "這一輪複習完成"))); renderMistakes(); renderToday(); return }
+  const f = S.items.get(fixSession.queue[0]);
+  const done = ok => () => { grade(f.id, ok); fixSession.queue.shift(); if (!ok) fixSession.queue.push(f.id); fixSession.shown = false; renderFix() };
+  st.replaceChildren(el("div", { class: "card" },
+    el("span", { class: "eyebrow" }, "這句哪裡錯？先在心裡改好"),
+    el("p", { class: "q-stem" }, f.wrong),
+    fixSession.shown ? el("div", { class: "explain" }, el("p", { class: "r en", style: "color:var(--ok);font-weight:600" }, f.right), el("p", { class: "small" }, f.why)) : null,
+    fixSession.shown ? el("div", { class: "row" }, el("button", { class: "btn ghost", onclick: done(false) }, "沒改對"), el("button", { class: "btn", onclick: done(true) }, "改對了"))
+      : el("button", { class: "btn", onclick: () => { fixSession.shown = true; renderFix() } }, "看答案")));
+}
+
+/* ---------- essay ---------- */
+const DEFAULT_PROMPT = { topic: "Many companies are rapidly adopting AI tools to automate tasks once performed by employees. Some argue this improves efficiency and frees workers for more meaningful work; others worry it leads to job losses and over-reliance on technology. State your position on whether companies should aggressively adopt AI in the workplace, and support it with specific reasons and examples.", words: "250–300" };
+let aiPrompts = store.get("aiPrompts", []);
+function allPrompts() { return [DEFAULT_PROMPT, ...itemsOf("prompt"), ...aiPrompts] }
+function renderPrompts() {
+  const ps = allPrompts(), sel = $("#promptSel"), cur = store.get("promptIdx", 0);
+  sel.replaceChildren(...ps.map((p, i) => el("option", { value: i }, (p.source ? `[${p.source}] ` : "") + p.topic.slice(0, 60) + (p.topic.length > 60 ? "…" : ""))));
+  sel.value = Math.min(cur, ps.length - 1);
+  $("#promptText").textContent = ps[sel.value]?.topic || "";
+}
+$("#promptSel").addEventListener("change", e => { store.set("promptIdx", +e.target.value); renderPrompts() });
+$("#newPrompt").addEventListener("click", async () => {
+  const st = $("#promptStatus");
+  if (!S.sample) { st.textContent = "需要在 claude.ai 開啟才能使用 AI。"; st.className = "status err"; return }
+  st.className = "status"; st.textContent = "出題中…";
+  try {
+    const out = await S.sample.json(`Write ONE argumentative essay prompt in English for a Taiwanese graduate-school entrance exam (政大科技管理與智慧財產研究所 style: technology, management, innovation, intellectual property, society). 2–3 sentences presenting two sides, then the task. Avoid these topics already used: ${allPrompts().map(p => p.topic.slice(0, 40)).join(" | ")}. Reply with only JSON: {"topic":"…"}`, { modelTier: "quick", cache: false });
+    if (!out?.topic) throw {};
+    aiPrompts.push({ topic: out.topic, words: "250–300", source: "AI" }); store.set("aiPrompts", aiPrompts.slice(-20));
+    store.set("promptIdx", allPrompts().length - 1); renderPrompts(); st.textContent = "";
+  } catch (e) { st.className = "status err"; st.textContent = aiErr(e) }
+});
+const essayBox = $("#essayBox");
+essayBox.value = store.get("essayDraft", "");
+const countWords = () => { const n = (essayBox.value.match(/[A-Za-z'’-]+/g) || []).length; $("#wc").textContent = `${n} 字`; return n };
+essayBox.addEventListener("input", () => { store.set("essayDraft", essayBox.value); countWords() });
+countWords();
+let eClock = null, eLeft = 1800;
+$("#essayClock").addEventListener("click", () => {
+  if (eClock) { clearInterval(eClock); eClock = null; $("#essayClock").textContent = "繼續計時"; return }
+  $("#essayClock").textContent = "暫停";
+  eClock = setInterval(() => { eLeft = Math.max(0, eLeft - 1); const t = $("#essayTimer"); t.textContent = `${String(Math.floor(eLeft / 60)).padStart(2, "0")}:${String(eLeft % 60).padStart(2, "0")}`; t.classList.toggle("low", eLeft <= 300); if (!eLeft) { clearInterval(eClock); eClock = null; $("#essayClock").textContent = "時間到" } }, 1000);
+});
+$("#gradeBtn").addEventListener("click", async () => {
+  const st = $("#gradeStatus"), text = essayBox.value.trim();
+  if (countWords() < 60) { st.className = "status err"; st.textContent = "至少寫 60 字再送出。"; return }
+  if (!S.sample) { st.className = "status err"; st.textContent = "需要在 claude.ai 開啟才能批改。"; return }
+  const prompt = $("#promptText").textContent;
+  st.className = "status"; st.textContent = "批改中，約 30–60 秒…"; $("#gradeBtn").disabled = true;
+  try {
+    const r = await S.sample.json(`You are a strict but encouraging grader for a Taiwanese graduate-school entrance exam essay (政大 英文B, essay worth 30 of 100 points; target 250–300 words in 30 minutes).
+Rubric, 25 points each: content (position, reasons, examples, addresses the counter-argument), organization (intro, body paragraphs, conclusion, transitions), grammar (sentence structure, agreement, tense, articles), vocabulary (precision, collocation, register).
+Grade the essay below. List EVERY error worth fixing (up to 20), quoting the exact original phrase and giving the corrected phrase. category is one of: "必改" (errors a grader marks immediately: spelling of names, basic grammar), "文法", "用字", "結構". "why" in Traditional Chinese, one sentence, naming the rule (e.g. 介系詞 to 後接 V-ing、平行結構、主詞動詞一致).
+Then write a rewrite that keeps the writer's own ideas and experiences but fixes structure and language, about 260 words.
+summary: 2–3 sentences in Traditional Chinese on the biggest strengths and the top priority to fix.
+Reply with only JSON:
+{"scores":{"content":0,"organization":0,"grammar":0,"vocabulary":0},"summary":"…","errors":[{"original":"…","corrected":"…","category":"…","why":"…"}],"rewrite":"…"}
+
+PROMPT:
+${prompt}
+
+ESSAY:
+${text}`, { modelTier: "complex", cache: false });
+    if (!r?.scores) throw { code: "invalid_json" };
+    const sc = r.scores, total = ["content", "organization", "grammar", "vocabulary"].reduce((s, k) => s + (+sc[k] || 0), 0);
+    const doc = { prompt, essay: text, words: countWords(), createdAt: Date.now(), result: { ...r, total } };
+    renderGrade(doc);
+    if (S.db && S.uid) { await S.db.collection(`data/users/${S.uid}`).doc(`essay-${doc.createdAt}`).set(doc) }
+    else { const local = store.get("essays", []); local.push({ ...doc, id: `essay-${doc.createdAt}` }); store.set("essays", local); S.essays = local; rebuild() }
+    st.textContent = `已批改，${(r.errors || []).length} 個錯誤收進錯題本。`;
+  } catch (e) { st.className = "status err"; st.textContent = aiErr(e) }
+  $("#gradeBtn").disabled = false;
+});
+function renderGrade(doc) {
+  const r = doc.result, sc = r.scores || {};
+  const names = { content: "內容與論點", organization: "組織結構", grammar: "文法句構", vocabulary: "用字精準度" };
+  $("#gradeOut").replaceChildren(el("div", { class: "card" },
+    el("span", { class: "eyebrow" }, new Date(doc.createdAt).toLocaleString("zh-TW")),
+    el("div", { class: "row" }, el("span", { class: "count", style: "font-size:2.6rem" }, r.total), el("span", { class: "muted" }, `/ 100・換算作文 30 分制約 ${Math.round(r.total * .3)} 分・${doc.words} 字`)),
+    el("div", { class: "score-row" }, Object.entries(names).map(([k, t]) => el("div", { class: "score" }, el("span", { class: "small muted" }, t), el("b", {}, `${sc[k] ?? "-"}/25`), el("div", { class: "meter" }, el("i", { style: `width:${(+sc[k] || 0) * 4}%` }))))),
+    r.summary ? el("p", {}, r.summary) : null,
+    el("h3", {}, "錯誤修正"),
+    el("div", {}, (r.errors || []).map(f => el("div", { class: "fix" }, el("div", { class: "row" }, el("span", { class: "tag bad" }, f.category || "")), el("span", { class: "w" }, f.original), el("span", { class: "r" }, f.corrected), el("span", { class: "small muted" }, f.why || "")))),
+    r.rewrite ? el("details", { open: true }, el("summary", {}, "保留原意的改寫版"), el("p", { class: "rewrite", style: "margin-top:8px" }, r.rewrite)) : null));
+}
+function renderEssayHist() {
+  const es = [...S.essays].sort((a, b) => b.createdAt - a.createdAt);
+  $("#essayHist").replaceChildren(...(es.length ? es.map(e => el("div", { class: "pack" },
+    el("div", { style: "min-width:0" }, el("p", { class: "en small", style: "overflow:hidden;text-overflow:ellipsis;white-space:nowrap" }, e.prompt), el("span", { class: "small muted" }, `${new Date(e.createdAt).toLocaleDateString("zh-TW")}・${e.words} 字`)),
+    el("button", { class: "btn plain", style: "padding:4px 12px", onclick: () => { renderGrade(e); $("#gradeOut").scrollIntoView({ behavior: "smooth" }) } }, `${e.result?.total ?? "-"} 分`)))
+    : [el("p", { class: "muted small" }, "還沒有批改紀錄。")]));
+}
+
+/* ---------- bank: packs ---------- */
+async function savePack(pack) {
+  pack.createdAt = Date.now();
+  pack.items = pack.items.map(it => ({ ...it, source: pack.source }));
+  if (!S.db) throw { message: "需要登入 claude.ai 才能存進題庫。" };
+  await S.db.collection("bank").doc(`p${pack.createdAt}`).set(pack);
+}
+function renderPacks() {
+  const packs = [...S.packs].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const count = (p, t) => (p.items || []).filter(i => i.type === t).length;
+  $("#packList").replaceChildren(...(packs.length ? packs.map(p => {
+    const parts = [["mc", "題"], ["vocab", "字"], ["passage", "篇短文"], ["prompt", "作文題"]].map(([t, u]) => count(p, t) ? `${count(p, t)} ${u}` : "").filter(Boolean).join("・");
+    const del = el("button", { class: "btn plain", style: "padding:4px 12px" }, "刪除");
+    del.addEventListener("click", async () => {
+      if (del.dataset.armed) { del.disabled = true; try { await S.db.collection("bank").doc(p.id).delete() } catch { del.textContent = "刪除失敗" } }
+      else { del.dataset.armed = 1; del.textContent = "確定刪除？"; setTimeout(() => { delete del.dataset.armed; del.textContent = "刪除" }, 4000) }
+    });
+    return el("div", { class: "pack" },
+      el("div", { style: "min-width:0" }, el("p", {}, p.title || p.id), el("span", { class: "small muted" }, [p.source, parts].filter(Boolean).join("・")),
+        p.sourceUrl ? el("span", { class: "small" }, " ", el("a", { href: p.sourceUrl, target: "_blank", rel: "noopener" }, "原文")) : null),
+      S.canEdit ? del : el("span"));
+  }) : [emptyBank("題庫還是空的。")]));
+}
+function emptyBank(msg) {
+  return el("div", { class: "card empty" }, el("p", {}, msg), el("p", { class: "small" }, "可以到「題庫」頁匯入考古題、貼新聞出題，或請 Claude 幫你補題。"), S.view !== "bank" ? el("button", { class: "btn ghost", onclick: () => show("bank") }, "前往題庫") : null);
+}
+
+/* ---------- bank: import ---------- */
+let importFile = null;
+const drop = $("#drop");
+$("#fileIn").addEventListener("change", e => setFile(e.target.files[0]));
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over") });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); setFile(e.dataTransfer.files[0]) });
+function setFile(f) { importFile = f || null; $("#fileName").textContent = f ? `${f.name}（${Math.round(f.size / 1024)} KB）` : "支援 PDF、JPG、PNG、TXT"; if (f && !$("#srcLabel").value) $("#srcLabel").value = f.name.replace(/\.[^.]+$/, "") }
+
+let pdfReady = null;
+function loadPdfJs() {
+  if (pdfReady) return pdfReady;
+  const add = src => new Promise((ok, no) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => no({ message: "PDF 工具載入失敗，請重新整理再試。" }); document.head.append(s) });
+  const base = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  pdfReady = add(base + "pdf.min.js").then(() => add(base + "pdf.worker.min.js"));
+  return pdfReady;
+}
+async function pdfToParts(file, status) {
+  await loadPdfJs();
+  const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+  const pages = Math.min(pdf.numPages, 16);
+  let text = "";
+  for (let i = 1; i <= pages; i++) { const tc = await (await pdf.getPage(i)).getTextContent(); text += tc.items.map(t => t.str).join(" ") + "\n\n" }
+  if (text.replace(/\s/g, "").length > pages * 300) return { text };
+  const images = [];
+  for (let i = 1; i <= pages; i++) {
+    status(`掃描檔，轉換第 ${i}/${pages} 頁…`);
+    const page = await pdf.getPage(i), vp = page.getViewport({ scale: 1.7 });
+    const c = document.createElement("canvas"); c.width = vp.width; c.height = vp.height;
+    await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+    images.push(await new Promise(r => c.toBlob(r, "image/jpeg", .82)));
+  }
+  return { images };
+}
+const EXTRACT = `You convert a Taiwanese graduate-school entrance English exam (or study material) into structured practice data.
+Extract EVERY multiple-choice question exactly as written. section: "vocab" (single-sentence word choice), "grammar", "cloze" (blanks inside a passage), "reading" (questions about a passage). For cloze and reading, put the passage once in "passages" with a key like "P1" and set each question's "passage" to that key; keep cloze blank numbers in the passage text.
+If the paper shows the answer, use it and set "aiAnswer": false. Otherwise decide the best answer yourself and set "aiAnswer": true.
+"explain": Traditional Chinese, 1–2 sentences.
+Non-multiple-choice parts: an essay/composition task goes to "prompts"; translation tasks go to "prompts" with topic starting "[翻譯] ". Skip headers, instructions and page numbers.
+Reply with only JSON:
+{"passages":[{"key":"P1","title":"","text":""}],"questions":[{"section":"vocab","stem":"","options":["","","",""],"answer":0,"aiAnswer":true,"explain":"","passage":null}],"prompts":[{"topic":""}]}`;
+// Second pass over the extracted paper: list every word worth a flashcard. Kept compact
+// (no examples) so a whole paper fits; example sentences are taken from the paper itself.
+const VOCAB_SCAN = `Below is part of a Taiwanese graduate-school entrance English exam. List EVERY word or fixed phrase in it that a Taiwanese university student preparing for this exam should have as a flashcard:
+- ALL four option words of every vocabulary question, correct or not.
+- Every option of cloze and grammar questions that is a content word or phrase (skip function words like "which", "although" unless used as a tested word).
+- Every key word in question stems and passages beyond the most common ~3,500 English words (beyond 學測 Level 1–3), plus useful collocations and phrasal verbs.
+Be exhaustive: a full paper usually yields 150–250 items. Use the dictionary base form (e.g. "mitigate", not "mitigated").
+For each item give part of speech (n./v./adj./adv./phr.) and a concise Traditional Chinese meaning that fits how it is used here.
+Reply with only a JSON array of [word, pos, zh] triples, for example: [["mitigate","v.","減輕"],["in lieu of","phr.","代替"]]
+
+EXAM MATERIAL:
+`;
+const sentencesOf = text => String(text || "").split(/(?<=[.!?])\s+|\n+/).map(s => s.trim()).filter(s => s.length > 20);
+function exampleFor(word, sentences) {
+  const w = word.toLowerCase(), esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const parts = w.split(/[\s-]+/);
+  // exact (space or hyphen between words), then inflected words (breaches, urges, looking, mitigated)
+  const infl = p => esc(p.replace(/(e|y)$/, "")) + "(?:e|y)?(?:s|es|d|ed|ing|ies|ied|er|est|ier|iest)?";
+  const tries = [new RegExp(`\\b${parts.map(esc).join("[\\s-]+")}\\b`, "i"), new RegExp(`\\b${parts.map(infl).join("[\\s-]+")}\\b`, "i")];
+  for (const re of tries) { const s = sentences.find(x => re.test(x)); if (s) return s.length > 240 ? s.slice(0, 237) + "…" : s }
+  return "";
+}
+async function scanVocab(r, status) {
+  const blocks = [
+    ...r.passages.map(p => p.text),
+    ...r.questions.map(q => `${q.stem}\n${q.options.map((o, k) => `(${LETTERS[k]}) ${o}`).join("  ")}`)
+  ];
+  const chunks = []; let cur = "";
+  for (const b of blocks) { if (cur && cur.length + b.length > 7000) { chunks.push(cur); cur = "" } cur += b + "\n\n" }
+  if (cur.trim()) chunks.push(cur);
+  // sentences for examples; vocab-question stems get the answer filled into the blank
+  const sentences = [
+    ...r.questions.map(q => q.section === "vocab" && q.options[q.answer] ? q.stem.replace(/_{2,}|\(\s*\)/, q.options[q.answer]) : q.stem),
+    ...r.passages.flatMap(p => {
+      // put cloze answers back into their blanks, in question order
+      const ans = r.questions.filter(q => q.section === "cloze" && q.passage === p.key).map(q => q.options[q.answer]);
+      return sentencesOf(p.text.replace(/__\((\d+)\)__/g, (m, n) => ans[n - 1] || "___"));
+    })
+  ].flatMap(sentencesOf);
+  const raw = [];
+  for (let i = 0; i < chunks.length; i++) {
+    status(`整理單字中（${i + 1}/${chunks.length}）…`);
+    try {
+      const out = await S.sample.json(VOCAB_SCAN + chunks[i], { modelTier: "default", cache: false });
+      for (const t of Array.isArray(out) ? out : []) {
+        const [word, pos, zh] = Array.isArray(t) ? t : [t?.word, t?.pos, t?.zh];
+        if (word) raw.push({ word, pos, zh, example: exampleFor(String(word), sentences) });
+      }
+    } catch (e) { if (e?.code === "not_granted" || e?.code === "rate_limited") throw e }
+  }
+  const words = freshVocab(raw);
+  const unique = new Set(raw.map(v => normWord(v.word))).size;
+  return { words, already: unique - words.length };
+}
+async function extract(parts, status) {
+  const out = { passages: [], questions: [], prompts: [] };
+  const merge = (r, tag) => {
+    const keyMap = {};
+    for (const p of r?.passages || []) if (p?.text) { const k = `${tag}${p.key || out.passages.length}`; keyMap[p.key] = k; out.passages.push({ ...p, key: k }) }
+    for (const q of r?.questions || []) if (validQ(q)) out.questions.push({ ...q, passage: q.passage ? keyMap[q.passage] || null : null });
+    for (const p of r?.prompts || []) if (p?.topic) out.prompts.push(p);
+  };
+  if (parts.text) {
+    const chunks = []; let t = parts.text;
+    while (t.length) { let cut = t.length > 24000 ? t.lastIndexOf("\n", 24000) : t.length; if (cut < 8000) cut = Math.min(24000, t.length); chunks.push(t.slice(0, cut)); t = t.slice(cut) }
+    for (let i = 0; i < chunks.length; i++) { status(`AI 解析中（${i + 1}/${chunks.length}）…`); merge(await S.sample.json(EXTRACT + "\n\nEXAM TEXT:\n" + chunks[i], { modelTier: "complex", cache: false }), `c${i}_`) }
+  } else {
+    const lim = await S.sample.limits().catch(() => null);
+    if (!lim?.images) throw { message: "這個檢視無法傳送圖片給 AI。請改貼上文字。" };
+    const per = Math.max(1, Math.min(4, lim.images.maxCount || 4));
+    for (let i = 0; i < parts.images.length; i += per) {
+      status(`AI 辨識第 ${i + 1}–${Math.min(i + per, parts.images.length)} 頁（共 ${parts.images.length} 頁）…`);
+      merge(await S.sample.json(EXTRACT + "\n\nThe exam pages are attached as images. A passage may continue from the previous page; extract what is visible.", { images: parts.images.slice(i, i + per), modelTier: "complex", cache: false }), `i${i}_`);
+    }
+  }
+  return out;
+}
+$("#importBtn").addEventListener("click", async () => {
+  const stEl = $("#importStatus"), status = t => { stEl.className = "status"; stEl.textContent = t };
+  const label = $("#srcLabel").value.trim() || "匯入的考古題", pasted = $("#pasteIn").value.trim();
+  if (!importFile && !pasted) { stEl.className = "status err"; stEl.textContent = "請先選檔案或貼上文字。"; return }
+  if (!S.sample || !S.db) { stEl.className = "status err"; stEl.textContent = "需要在 claude.ai 登入後開啟才能匯入。"; return }
+  $("#importBtn").disabled = true;
+  try {
+    let parts;
+    if (pasted) parts = { text: pasted };
+    else if (/pdf$/i.test(importFile.type) || /\.pdf$/i.test(importFile.name)) parts = await pdfToParts(importFile, status);
+    else if (importFile.type.startsWith("image/")) parts = { images: [importFile] };
+    else parts = { text: await importFile.text() };
+    const r = await extract(parts, status);
+    if (!r.questions.length && !r.prompts.length) throw { message: "沒有辨識到題目。若是照片，請拍清楚一點再試。" };
+    const items = [
+      ...r.passages.map(p => ({ type: "passage", key: p.key, title: p.title || "", text: p.text })),
+      ...r.questions.map(q => ({ type: "mc", section: SEC[q.section] ? q.section : "vocab", stem: q.stem, options: q.options.slice(0, 4), answer: q.answer, aiAnswer: !!q.aiAnswer, explain: q.explain || "", passage: q.passage || undefined })),
+      ...r.prompts.map(p => ({ type: "prompt", topic: p.topic, words: "250–300" }))
+    ];
+    const { words, already } = await scanVocab(r, status);
+    items.push(...words);
+    status("存入題庫中…");
+    await savePack({ title: label, source: label, kind: "exam", items });
+    status(`已存入 ${r.questions.length} 題選擇題${r.prompts.length ? `、${r.prompts.length} 個寫作題` : ""}，單字卡新增 ${words.length} 個字${already ? `（另有 ${already} 個已在字庫）` : ""}。`);
+    $("#pasteIn").value = ""; setFile(null);
+  } catch (e) { stEl.className = "status err"; stEl.textContent = aiErr(e) }
+  $("#importBtn").disabled = false;
+});
+$("#newsBtn").addEventListener("click", async () => {
+  const st = $("#newsStatus"), text = $("#newsText").value.trim(), url = $("#newsUrl").value.trim(), kind = $("#newsKind").value;
+  if (text.length < 300) { st.className = "status err"; st.textContent = "請貼上至少一兩段文章內容。"; return }
+  if (!S.sample || !S.db) { st.className = "status err"; st.textContent = "需要在 claude.ai 登入後開啟才能出題。"; return }
+  st.className = "status"; st.textContent = "改寫並出題中，約 30–60 秒…"; $("#newsBtn").disabled = true;
+  try {
+    const want = kind === "both" ? ["cloze", "reading"] : [kind];
+    const r = await S.sample.json(`You turn a news article into graduate-entrance-exam English practice (台大/政大研究所英文 level).
+Do NOT copy the article. Write NEW passages in your own words based on its facts, academic-magazine register.
+${want.includes("cloze") ? 'Make a "cloze" set: a 180–230 word passage with five blanks written __(1)__ … __(5)__, and 5 questions (one per blank) testing vocabulary, collocation, connectors and grammar.\n' : ""}${want.includes("reading") ? 'Make a "reading" set: a 280–350 word passage and 5 questions (main idea, detail, inference, vocabulary in context, author attitude).\n' : ""}Also list up to 8 useful exam-level words from your passages as "vocab" with part of speech, Traditional Chinese meaning and the sentence they appear in.
+Explanations in Traditional Chinese, 1–2 sentences.
+Reply with only JSON:
+{"source":"publication name if identifiable, else \\"\\"","sets":[{"section":"cloze","title":"…","passage":"…","questions":[{"stem":"…","options":["…","…","…","…"],"answer":0,"explain":"…"}]}],"vocab":[{"word":"…","pos":"…","zh":"…","example":"…"}]}
+
+ARTICLE:
+${text.slice(0, 30000)}`, { modelTier: "complex", cache: false });
+    const items = [];
+    (r?.sets || []).forEach((s, i) => {
+      if (!s?.passage) return;
+      const key = `N${i}`, sec = s.section === "reading" ? "reading" : "cloze";
+      items.push({ type: "passage", key, title: s.title || "", text: s.passage, sourceUrl: url || undefined });
+      for (const q of s.questions || []) if (validQ(q)) items.push({ type: "mc", section: sec, stem: q.stem, options: q.options.slice(0, 4), answer: q.answer, explain: q.explain || "", passage: key, sourceUrl: url || undefined });
+    });
+    const scan = await scanVocab({ passages: items.filter(i => i.type === "passage"), questions: items.filter(i => i.type === "mc") }, t => { st.textContent = t });
+    items.push(...freshVocab([...(r?.vocab || []), ...scan.words]));
+    if (!items.some(i => i.type === "mc")) throw { message: "沒有產生題目，請換一段內容再試。" };
+    const src = r.source ? `時事・${r.source}` : "時事";
+    await savePack({ title: `${src}・${items.find(i => i.type === "passage")?.title || "新聞出題"}`, source: src, sourceUrl: url || undefined, kind: "news", items });
+    st.textContent = `已加入 ${items.filter(i => i.type === "mc").length} 題和 ${items.filter(i => i.type === "vocab").length} 個單字。`;
+    $("#newsText").value = ""; $("#newsUrl").value = "";
+  } catch (e) { st.className = "status err"; st.textContent = aiErr(e) }
+  $("#newsBtn").disabled = false;
+});
+
+/* ---------- render ---------- */
+function renderAll() {
+  renderToday(); renderSetup(); renderMistakes(); renderPrompts(); renderEssayHist(); renderPacks(); renderVocabList();
+  if (S.view === "vocab" && (!vocabSession || !vocabSession.queue.length)) { vocabSession = null; startVocab() }
+}
+
+/* ---------- boot ---------- */
+S.srs = store.get("srs", S.srs);
+S.essays = store.get("essays", []);
+setVocabMode(V.mode);
+show(store.get("view", "today"));
+rebuild();
+
+// Standalone (GitHub Pages): no Claude runtime. Question bank comes from bank.json next to the page,
+// progress stays in this browser, AI features are hidden.
+const STANDALONE = !(window.claude && window.claude.use);
+if (STANDALONE) {
+  document.querySelectorAll("[data-ai]").forEach(n => n.hidden = true);
+  document.querySelectorAll("[data-standalone]").forEach(n => n.hidden = false);
+  setSync("獨立版・進度存在這台裝置");
+  fetch("bank.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : Promise.reject()).then(b => {
+    S.packs = b.packs || [];
+    rebuild();
+    if (b.exportedAt) setSync(`獨立版・題庫更新於 ${dkey(b.exportedAt)}`);
+  }).catch(() => setSync("題庫載入失敗，請重新整理"));
+}
+$("#copyEssay").addEventListener("click", () => {
+  const text = `PROMPT:\n${$("#promptText").textContent}\n\nESSAY:\n${essayBox.value}`;
+  const done = t => { $("#copyStatus").textContent = t };
+  navigator.clipboard.writeText(text).then(() => done("已複製，到 Claude 版的作文頁貼上送出批改。"), () => { essayBox.select(); done("無法自動複製，作文已全選，請按 Ctrl+C。") });
+});
+$("#exportProgress").addEventListener("click", () => {
+  const data = { app: "grad-english-review", version: 1, exportedAt: Date.now(), srs: S.srs, essays: store.get("essays", []), examDate: examInput.value };
+  const a = el("a", { href: URL.createObjectURL(new Blob([JSON.stringify(data)], { type: "application/json" })), download: `英文複習進度-${dkey(Date.now())}.json` });
+  document.body.append(a); a.click(); a.remove();
+  $("#progressStatus").textContent = "已下載備份檔。";
+});
+$("#importProgress").addEventListener("change", async e => {
+  const st = $("#progressStatus"), f = e.target.files[0];
+  if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (d.app !== "grad-english-review" || !d.srs?.cards) throw 0;
+    // merge: keep whichever card was reviewed more
+    for (const [k, c] of Object.entries(d.srs.cards)) if (!S.srs.cards[k] || (c.n || 0) >= (S.srs.cards[k].n || 0)) S.srs.cards[k] = c;
+    for (const [k, v] of Object.entries(d.srs.log || {})) S.srs.log[k] = Math.max(v, S.srs.log[k] || 0);
+    store.set("srs", S.srs);
+    if (Array.isArray(d.essays) && d.essays.length) { const ids = new Set(S.essays.map(x => x.id)); S.essays = [...S.essays, ...d.essays.filter(x => !ids.has(x.id))]; store.set("essays", S.essays) }
+    if (d.examDate) { examInput.value = d.examDate; store.set("examDate", d.examDate) }
+    rebuild();
+    st.className = "status"; st.textContent = `已匯入 ${Object.keys(d.srs.cards).length} 筆單字與題目進度。`;
+  } catch { st.className = "status err"; st.textContent = "這不是複習器的進度檔，請選匯出時下載的 .json。" }
+  e.target.value = "";
+});
+
+if (!STANDALONE) (async () => {
+  const use = n => window.claude?.use ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
+  const [db, user, sample] = await Promise.all([use("db"), use("user"), use("sample")]);
+  S.sample = sample;
+  S.canEdit = !!(user?.canEdit?.() ?? false);
+  if (!db) { setSync("離線模式：進度只存在這台裝置"); renderPacks(); return }
+  S.db = db;
+  S.uid = user ? await user.id().catch(() => null) : null;
+  db.collection("bank").onSnapshot(snap => {
+    S.packs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    rebuild(); setSync("已同步");
+  }, () => setSync("題庫讀取失敗"));
+  if (!S.uid) { setSync("未登入：進度只存在這台裝置"); return }
+  const remote = await db.doc(`data/users/${S.uid}/srs`).get().catch(() => null);
+  if (remote?.exists) {
+    const r = remote.data();
+    // merge: keep whichever card was reviewed more
+    for (const [k, c] of Object.entries(r.cards || {})) if (!S.srs.cards[k] || (c.n || 0) >= (S.srs.cards[k].n || 0)) S.srs.cards[k] = c;
+    for (const [k, v] of Object.entries(r.log || {})) S.srs.log[k] = Math.max(v, S.srs.log[k] || 0);
+    store.set("srs", S.srs);
+  }
+  if (Object.keys(S.srs.cards).length) saveSrs();
+  db.collection(`data/users/${S.uid}`).onSnapshot(snap => {
+    S.essays = snap.docs.filter(d => d.id.startsWith("essay-")).map(d => ({ id: d.id, ...d.data() }));
+    rebuild();
+  });
+})();
+})();
+</script>

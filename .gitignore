@@ -1,0 +1,8 @@
+# personal data: contains the first graded essay
+seed/build_seed.py
+seed/essay-first.json
+# scratch / test output
+seed/*.log
+seed/peek.txt
+seed/backfill-pack.json
+_test.html
