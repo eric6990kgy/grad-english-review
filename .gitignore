@@ -6,3 +6,6 @@ seed/*.log
 seed/peek.txt
 seed/backfill-pack.json
 _test.html
+
+# Apps Script with the real sync passcode
+private/

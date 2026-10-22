@@ -296,6 +296,16 @@ a { color: var(--print) }
 
   <!-- BANK -->
   <section class="view" id="v-bank" hidden>
+    <div class="card">
+      <h2>雲端同步</h2>
+      <p class="small muted">Claude 版和獨立版透過你 Google Drive 裡的進度檔共用作答進度與作文紀錄。開啟頁面時自動同步，作答後約 20 秒、或離開頁面時也會同步。</p>
+      <div data-standalone hidden style="display:grid;gap:8px">
+        <label class="field">Apps Script 網址<input type="text" id="syncUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
+        <label class="field">通關碼<input type="text" id="syncKey" autocomplete="off"></label>
+        <p class="small muted">只需設定一次，這台裝置會記住。網址和通關碼不要分享給別人。</p>
+      </div>
+      <div class="row"><button class="btn ghost" id="syncNow">立即同步</button><span class="status" id="syncStatus">尚未同步</span></div>
+    </div>
     <div class="card" data-standalone hidden>
       <h2>獨立版</h2>
       <p class="small muted">這個版本不需要登入 Claude，單字卡、選擇題、錯題本都能用，進度存在這台裝置的瀏覽器裡。AI 批改作文、AI 出題、匯入考古題請用 Claude 版。題庫由 Claude 版同步過來，更新後重新整理就會出現新題。</p>
@@ -416,6 +426,7 @@ function grade(id, ok) {
   store.set("srs", S.srs);
   clearTimeout(saveTimer);
   saveTimer = setTimeout(saveSrs, 1500);
+  scheduleSync();
 }
 let saving = false, pending = false;
 async function saveSrs() {
@@ -828,6 +839,7 @@ ${text}`, { modelTier: "complex", cache: false });
     if (S.db && S.uid) { await S.db.collection(`data/users/${S.uid}`).doc(`essay-${doc.createdAt}`).set(doc) }
     else { const local = store.get("essays", []); local.push({ ...doc, id: `essay-${doc.createdAt}` }); store.set("essays", local); S.essays = local; rebuild() }
     st.textContent = `已批改，${(r.errors || []).length} 個錯誤收進錯題本。`;
+    scheduleSync(5000);
   } catch (e) { st.className = "status err"; st.textContent = aiErr(e) }
   $("#gradeBtn").disabled = false;
 });
@@ -1058,6 +1070,89 @@ ${text.slice(0, 30000)}`, { modelTier: "complex", cache: false });
   $("#newsBtn").disabled = false;
 });
 
+/* ---------- cloud sync (Google Drive) ----------
+   Progress lives in snapshot files grad-english-progress-<ts>.json in the viewer's Drive. Every write
+   creates a new snapshot and trashes the older ones (the Drive connector cannot rewrite a file).
+   Claude version: Drive connector. Standalone: the Apps Script in apps-script/Code.gs, same merge rules. */
+const SYNC = { busy: false, again: false, timer: null, mcp: null, ready: false };
+const SNAPSHOT = /^grad-english-progress-(\d+)\.json$/;
+// Mutates dst, returns true if dst changed. Keep in step with merge_() in apps-script/Code.gs.
+function mergeProgress(dst, src) {
+  let changed = false;
+  dst.srs = dst.srs || {}; dst.srs.cards = dst.srs.cards || {}; dst.srs.log = dst.srs.log || {}; dst.essays = dst.essays || [];
+  for (const [k, c] of Object.entries(src?.srs?.cards || {})) {
+    const d = dst.srs.cards[k];
+    if (!d || (c.n || 0) > (d.n || 0) || ((c.n || 0) === (d.n || 0) && (c.due || 0) > (d.due || 0))) {
+      if (JSON.stringify(c) !== JSON.stringify(d)) { dst.srs.cards[k] = c; changed = true }
+    }
+  }
+  for (const [k, v] of Object.entries(src?.srs?.log || {})) if ((v || 0) > (dst.srs.log[k] || 0)) { dst.srs.log[k] = v; changed = true }
+  const ids = new Set(dst.essays.map(x => x.id));
+  for (const x of src?.essays || []) if (x?.id && !ids.has(x.id)) { dst.essays.push(x); ids.add(x.id); changed = true }
+  return changed;
+}
+const localDoc = () => ({ app: "grad-english-review", version: 1, srs: S.srs, essays: S.essays });
+async function applyRemote(doc) {
+  const known = new Set(S.essays.map(e => e.id)), before = JSON.stringify(S.srs);
+  const local = { srs: S.srs, essays: S.essays.slice() };
+  mergeProgress(local, doc);
+  S.srs = local.srs;
+  if (JSON.stringify(S.srs) !== before) { store.set("srs", S.srs); saveSrs() }
+  const fresh = local.essays.filter(e => !known.has(e.id));
+  if (fresh.length) {
+    if (S.db && S.uid) { for (const { id, ...e } of fresh) await S.db.collection(`data/users/${S.uid}`).doc(id).set(e) }
+    else { S.essays = local.essays; store.set("essays", S.essays) }
+  }
+  rebuild();
+}
+const b64text = s => new TextDecoder().decode(Uint8Array.from(atob(s), c => c.charCodeAt(0)));
+async function driveSync() {
+  const call = (tool, input) => SYNC.mcp.callTool("Google Drive", tool, input, { cache: false }).then(r => r.payload);
+  const found = await call("search_files", { query: "title contains 'grad-english-progress-' and owner = 'me'", excludeContentSnippets: true, pageSize: 50 });
+  const files = (found?.files || []).map(f => ({ id: f.id, ts: +(SNAPSHOT.exec(f.title || "") || [])[1] })).filter(f => f.ts).sort((a, b) => b.ts - a.ts);
+  let remote = { srs: { cards: {}, log: {} }, essays: [] };
+  if (files[0]) remote = JSON.parse(b64text((await call("download_file_content", { fileId: files[0].id })).content));
+  await applyRemote(remote);
+  const merged = JSON.parse(JSON.stringify(remote));
+  if (mergeProgress(merged, localDoc()) || !files.length) {
+    merged.app = "grad-english-review"; merged.version = 1; merged.updatedAt = Date.now();
+    await call("create_file", { title: `grad-english-progress-${merged.updatedAt}.json`, textContent: JSON.stringify(merged), contentMimeType: "application/json", disableConversionToGoogleType: true });
+    for (const f of files) await call("trash_file", { fileId: f.id }).catch(() => {});
+  }
+}
+const syncCfg = () => ({ url: store.get("syncUrl", ""), key: store.get("syncKey", "") });
+async function scriptSync() {
+  const { url, key } = syncCfg();
+  const r = await fetch(url, { method: "POST", body: JSON.stringify({ key, doc: localDoc() }) });
+  const j = await r.json().catch(() => ({ ok: false, error: "bad_reply" }));
+  if (!j.ok) throw { message: j.error === "bad_key" ? "通關碼不對，請重新確認。" : "Apps Script 回應異常，請確認部署設定是「任何人」都能存取。" };
+  await applyRemote(j.doc);
+}
+const syncStatus = (t, err) => { const s = $("#syncStatus"); s.textContent = t; s.className = err ? "status err" : "status" };
+const syncReady = () => STANDALONE ? !!(syncCfg().url && syncCfg().key) : !!(SYNC.mcp && SYNC.ready);
+async function runSync() {
+  clearTimeout(SYNC.timer); SYNC.timer = null;
+  if (!syncReady()) { syncStatus(STANDALONE ? "填入 Apps Script 網址和通關碼後即可同步" : "需要在 claude.ai 登入並允許 Google Drive 連接器", false); return }
+  if (SYNC.busy) { SYNC.again = true; return }
+  SYNC.busy = true; syncStatus("同步中…");
+  try {
+    await (STANDALONE ? scriptSync() : driveSync());
+    syncStatus(`已同步 ${new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })}`);
+  } catch (e) {
+    syncStatus(e?.code === "not_granted" || e?.code === "not_in_manifest" ? "頁面沒有使用 Google Drive 的權限，可在權限選單開啟。"
+      : e?.code === "server_not_connected" ? "你的 claude.ai 沒有連接 Google Drive。"
+      : e instanceof TypeError ? "連不到 Apps Script，請檢查網址或網路。" : (e?.message || "同步失敗，稍後再試。"), true);
+  }
+  SYNC.busy = false;
+  if (SYNC.again) { SYNC.again = false; scheduleSync(3000) }
+}
+function scheduleSync(ms = 20000) { if (!syncReady()) return; clearTimeout(SYNC.timer); SYNC.timer = setTimeout(runSync, ms) }
+document.addEventListener("visibilitychange", () => { if (document.hidden && SYNC.timer) runSync() });
+$("#syncNow").addEventListener("click", () => {
+  if (STANDALONE) { store.set("syncUrl", $("#syncUrl").value.trim()); store.set("syncKey", $("#syncKey").value.trim()) }
+  runSync();
+});
+
 /* ---------- render ---------- */
 function renderAll() {
   renderToday(); renderSetup(); renderMistakes(); renderPrompts(); renderEssayHist(); renderPacks(); renderVocabList();
@@ -1078,10 +1173,13 @@ if (STANDALONE) {
   document.querySelectorAll("[data-ai]").forEach(n => n.hidden = true);
   document.querySelectorAll("[data-standalone]").forEach(n => n.hidden = false);
   setSync("獨立版・進度存在這台裝置");
+  $("#syncUrl").value = syncCfg().url;
+  $("#syncKey").value = syncCfg().key;
   fetch("bank.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : Promise.reject()).then(b => {
     S.packs = b.packs || [];
     rebuild();
     if (b.exportedAt) setSync(`獨立版・題庫更新於 ${dkey(b.exportedAt)}`);
+    runSync();
   }).catch(() => setSync("題庫載入失敗，請重新整理"));
 }
 $("#copyEssay").addEventListener("click", () => {
@@ -1115,8 +1213,9 @@ $("#importProgress").addEventListener("change", async e => {
 
 if (!STANDALONE) (async () => {
   const use = n => window.claude?.use ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
-  const [db, user, sample] = await Promise.all([use("db"), use("user"), use("sample")]);
+  const [db, user, sample, mcp] = await Promise.all([use("db"), use("user"), use("sample"), use("mcp")]);
   S.sample = sample;
+  SYNC.mcp = mcp;
   S.canEdit = !!(user?.canEdit?.() ?? false);
   if (!db) { setSync("離線模式：進度只存在這台裝置"); renderPacks(); return }
   S.db = db;
@@ -1138,6 +1237,8 @@ if (!STANDALONE) (async () => {
   db.collection(`data/users/${S.uid}`).onSnapshot(snap => {
     S.essays = snap.docs.filter(d => d.id.startsWith("essay-")).map(d => ({ id: d.id, ...d.data() }));
     rebuild();
+    // first sync once this viewer's progress and essays have loaded
+    if (!SYNC.ready) { SYNC.ready = true; runSync() }
   });
 })();
 })();
